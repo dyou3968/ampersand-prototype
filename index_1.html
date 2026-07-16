@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ampersand — Troubleshooting Prototype</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-2: #fafafa;
+    --border: #e7e7ea;
+    --text: #1c1c21;
+    --text-2: #5f5f6b;
+    --text-3: #9d9da8;
+    --accent: #4f46e5;
+    --red: #d13438;
+    --red-soft: #fdf1f1;
+    --red-border: #f3caca;
+    --green: #1e7c3d;
+    --green-soft: #e9f6ee;
+    --amber: #b96a00;
+    --amber-soft: #fff7e8;
+    --gray-pill: #f1f1f4;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "DM Sans", Roboto, sans-serif;
+    background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5;
+  }
+  .app { display: flex; min-height: 100vh; }
+
+  /* ---------- Sidebar (light, per present-state video) ---------- */
+  .sidebar {
+    width: 232px; background: var(--bg); border-right: 1px solid var(--border); flex-shrink: 0;
+    display: flex; flex-direction: column; padding: 14px 10px; position: sticky; top: 0; height: 100vh;
+  }
+  .proj-switcher {
+    display: flex; align-items: center; gap: 8px; padding: 8px 10px; font-weight: 600; font-size: 13.5px;
+    border-radius: 8px; cursor: pointer; margin-bottom: 14px;
+  }
+  .proj-switcher:hover { background: var(--bg-2); }
+  .proj-switcher .chev { margin-left: auto; color: var(--text-3); font-size: 11px; }
+  .nav-item {
+    padding: 7px 10px; border-radius: 7px; cursor: pointer; color: var(--text-2);
+    display: flex; align-items: center; gap: 9px; margin-bottom: 1px; font-size: 13.5px;
+  }
+  .nav-item .ic { width: 16px; text-align: center; opacity: .75; font-size: 13px; }
+  .nav-item:hover { background: var(--bg-2); color: var(--text); }
+  .nav-item.active { background: #efeff2; color: var(--text); font-weight: 600; }
+  .nav-item .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--red); margin-left: auto; }
+  .nav-sep { border-top: 1px solid var(--border); margin: 10px 6px; }
+  .sidebar .bottom { margin-top: auto; }
+
+  /* ---------- Topbar ---------- */
+  .main { flex: 1; display: flex; flex-direction: column; min-width: 0; background: var(--bg); }
+  .topbar {
+    padding: 12px 32px 0; display: flex; align-items: flex-start; gap: 16px;
+  }
+  .crumbs { font-size: 12.5px; color: var(--text-3); }
+  .crumbs a { color: var(--text-3); text-decoration: none; cursor: pointer; }
+  .crumbs a:hover { color: var(--text); }
+  .page-title { font-size: 19px; font-weight: 650; letter-spacing: -0.01em; margin-top: 2px; }
+  .topbar .spacer { flex: 1; }
+  .toggle-wrap { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-2); cursor: pointer; user-select: none; padding-top: 4px; }
+  .switch { width: 32px; height: 18px; background: #d9d9de; border-radius: 10px; position: relative; transition: background .15s; flex-shrink: 0; }
+  .switch::after { content: ""; position: absolute; width: 14px; height: 14px; background: #fff; border-radius: 50%; top: 2px; left: 2px; transition: left .15s; box-shadow: 0 1px 2px rgba(0,0,0,.2); }
+  body.annotations .switch { background: var(--accent); }
+  body.annotations .switch::after { left: 16px; }
+
+  .content { padding: 18px 32px 60px; max-width: 1080px; width: 100%; }
+  .view { display: none; }
+  .view.visible { display: block; }
+
+  /* ---------- Demo banner ---------- */
+  .demo-banner {
+    background: #f5f5ff; border: 1px solid #dedeff; color: #41418f;
+    padding: 8px 14px; border-radius: 8px; font-size: 12.5px; margin-bottom: 18px;
+  }
+
+  /* ---------- Overview card (matches "Customers Overview" card) ---------- */
+  .overview { border: 1px solid var(--border); border-radius: 10px; padding: 20px 22px; margin-bottom: 22px; }
+  .overview .row1 { display: flex; align-items: flex-start; gap: 16px; }
+  .overview h2 { font-size: 17px; font-weight: 650; margin-bottom: 6px; }
+  .overview p { color: var(--text-2); font-size: 13px; max-width: 560px; }
+  .overview .right { margin-left: auto; font-family: var(--mono); font-size: 12px; color: var(--text-2); white-space: nowrap; }
+  .overview .row2 { display: flex; align-items: center; gap: 10px; margin-top: 16px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--border);
+    border-radius: 6px; padding: 3px 9px; font-size: 12px; background: var(--bg-2);
+  }
+  .chip .k { text-transform: uppercase; letter-spacing: .05em; font-size: 10px; color: var(--text-3); font-weight: 650; }
+  .chip .v { font-family: var(--mono); font-weight: 600; font-size: 12px; }
+  .chip.alert { border-color: var(--red-border); background: var(--red-soft); }
+  .chip.alert .k, .chip.alert .v { color: var(--red); }
+  .linkbtn {
+    margin-left: auto; border: 1px solid var(--border); background: var(--bg); border-radius: 8px;
+    padding: 7px 14px; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text);
+  }
+  .linkbtn:hover { background: var(--bg-2); }
+  .linkbtn::after { content: " ›"; color: var(--text-3); }
+
+  /* ---------- Toolbar (Add filter / Search, matches video) ---------- */
+  .toolbar { display: flex; align-items: center; gap: 12px; margin: 4px 0 12px; }
+  .addfilter { border: 1px dashed var(--border); background: var(--bg); border-radius: 7px; padding: 5px 11px; font-size: 12.5px; color: var(--text-2); cursor: pointer; }
+  .addfilter:hover { background: var(--bg-2); }
+  .search { margin-left: auto; border: 1px solid var(--border); border-radius: 8px; padding: 7px 12px; font-size: 13px; color: var(--text-3); width: 300px; background: var(--bg); }
+
+  /* ---------- Tables (chevron start, kebab end, per video) ---------- */
+  .tablewrap { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 22px; }
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; font-size: 12.5px; color: var(--text-2); padding: 10px 14px; border-bottom: 1px solid var(--border); font-weight: 600; background: var(--bg); white-space: nowrap; }
+  th .sort { color: var(--text-3); font-size: 10px; }
+  td { padding: 12px 14px; border-bottom: 1px solid #f0f0f3; vertical-align: middle; font-size: 13px; }
+  tr:last-child td { border-bottom: none; }
+  tr.clickable { cursor: pointer; }
+  tr.clickable:hover { background: var(--bg-2); }
+  td.caret, th.caret { width: 26px; color: var(--text-3); padding-right: 0; font-size: 11px; }
+  td.kebab, th.kebab { width: 30px; color: var(--text-3); text-align: center; cursor: pointer; }
+  .name { font-weight: 600; }
+  .mono { font-family: var(--mono); font-size: 12px; color: var(--text-2); }
+
+  .pill { display: inline-block; padding: 2px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+  .pill.bad { background: var(--red-soft); color: var(--red); }
+  .pill.ok { background: var(--green-soft); color: var(--green); }
+  .pill.warn { background: var(--amber-soft); color: var(--amber); }
+  .pill.neutral { background: var(--gray-pill); color: var(--text-2); }
+
+  .new-tag {
+    display: inline-block; background: #eef; color: var(--accent); border: 1px solid #d8d8fa;
+    font-size: 9.5px; font-weight: 700; letter-spacing: .05em; padding: 0 5px; border-radius: 4px;
+    vertical-align: 2px; margin-left: 6px;
+  }
+
+  /* ---------- Diagnosis panel (NEW element, styled to fit) ---------- */
+  .diagnosis { border: 1px solid var(--red-border); border-radius: 10px; margin-bottom: 22px; overflow: hidden; }
+  .diagnosis .head { padding: 16px 20px 14px; background: var(--red-soft); border-bottom: 1px solid var(--red-border); }
+  .diagnosis .label { font-size: 10.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--red); margin-bottom: 4px; }
+  .diagnosis h2 { font-size: 16px; font-weight: 650; }
+  .diagnosis .meta { color: var(--text-2); font-size: 13px; margin-top: 4px; max-width: 760px; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; padding: 12px 20px; border-top: 1px solid var(--border); background: var(--bg-2); }
+  .btn {
+    border: 1px solid var(--border); background: var(--bg); color: var(--text);
+    padding: 6px 13px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  .btn:hover { background: var(--bg-2); }
+  .btn.primary { background: var(--text); border-color: var(--text); color: #fff; }
+  .btn.primary:hover { background: #33333b; }
+
+  .check { display: flex; gap: 12px; padding: 11px 20px; border-top: 1px solid #f0f0f3; align-items: baseline; background: var(--bg); }
+  .check:first-of-type { border-top: none; }
+  .check .icon { font-size: 13px; width: 18px; text-align: center; flex-shrink: 0; transform: translateY(1px); }
+  .check.fail .icon { color: var(--red); }
+  .check.pass .icon { color: var(--green); }
+  .check.warn .icon { color: var(--amber); }
+  .check .body { flex: 1; }
+  .check .t { font-weight: 600; font-size: 13.5px; }
+  .check .d { color: var(--text-2); font-size: 13px; }
+  .check a { color: var(--accent); text-decoration: none; font-weight: 600; cursor: pointer; }
+
+  /* ---------- AI Diagnosis Summary card ---------- */
+  .ai-card { border: 1px solid #d8d8fa; border-left: 4px solid var(--accent); border-radius: 10px; margin-bottom: 14px; background: linear-gradient(to bottom, #fbfbff, #fff); overflow: hidden; }
+  .ai-card .head { padding: 14px 20px 4px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .ai-card .label { font-size: 10.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--accent); }
+  .ai-chip { font-size: 10.5px; font-weight: 650; color: var(--accent); background: #eef; border: 1px solid #d8d8fa; border-radius: 999px; padding: 1px 9px; }
+  .conf-chip { font-size: 10.5px; font-weight: 650; border-radius: 999px; padding: 1px 9px; }
+  .conf-chip.high { color: var(--green); background: var(--green-soft); border: 1px solid #cfe8d8; }
+  .conf-chip.low { color: var(--amber); background: var(--amber-soft); border: 1px solid #f3e2bd; }
+  .ai-card .body { padding: 8px 20px 14px; font-size: 14px; line-height: 1.75; max-width: 860px; }
+  .ai-card .body b { font-weight: 650; }
+  .cite { display: inline-block; font-size: 10px; font-weight: 700; color: var(--accent); background: #eef; border: 1px solid #d8d8fa; border-radius: 4px; padding: 0 4px; margin-left: 2px; cursor: pointer; vertical-align: 3px; line-height: 1.4; }
+  .cite:hover { background: var(--accent); color: #fff; }
+  .ai-card .foot { padding: 8px 20px 12px; font-size: 11.5px; color: var(--text-3); border-top: 1px solid #ececf8; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+  .ai-card .foot a { color: var(--accent); cursor: pointer; text-decoration: none; font-weight: 600; }
+  .ai-card .rawerr { font-family: var(--mono); font-size: 12px; background: #17171c; color: #e6e6ea; padding: 10px 14px; border-radius: 8px; margin-top: 8px; white-space: pre-wrap; overflow-wrap: anywhere; }
+  @keyframes citeflash { 0% { background: #eef; } 50% { background: #dcdcfa; } 100% { background: transparent; } }
+  .check.flash { animation: citeflash 1.6s ease-out; }
+
+  /* ---------- Operation detail ---------- */
+  .meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 20px; }
+  .meta-grid > div { padding: 12px 16px; border-right: 1px solid var(--border); background: var(--bg); }
+  .meta-grid > div:last-child { border-right: none; }
+  .meta-grid .k { font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-3); font-weight: 650; margin-bottom: 2px; }
+  .meta-grid .v { font-size: 13px; font-weight: 600; }
+
+  .error-summary { background: var(--red-soft); border: 1px solid var(--red-border); border-radius: 10px; padding: 14px 18px; margin-bottom: 20px; }
+  .error-summary .t { font-weight: 700; color: var(--red); font-size: 12.5px; margin-bottom: 4px; text-transform: uppercase; letter-spacing: .05em; }
+  .error-summary code { font-family: var(--mono); font-size: 12.5px; background: #fff; border: 1px solid var(--red-border); padding: 1px 5px; border-radius: 4px; }
+
+  /* Log rows: ISO mono timestamp · caret · message · severity right (video shows right column) */
+  .log-row { padding: 10px 16px; display: flex; gap: 12px; align-items: baseline; cursor: pointer; font-size: 13px; border-bottom: 1px solid #f0f0f3; }
+  .log-row:hover { background: var(--bg-2); }
+  .log-row.error-pin { background: var(--red-soft); border: 1px solid var(--red-border); border-radius: 6px; }
+  .log-row .ts { font-family: var(--mono); font-size: 12px; color: var(--text-2); flex-shrink: 0; width: 172px; }
+  .log-row .caret { color: var(--text-3); font-size: 10px; width: 12px; }
+  .log-row .msg { flex: 1; font-family: var(--mono); font-size: 12.5px; }
+  .sev { font-family: var(--mono); font-size: 10.5px; font-weight: 700; padding: 1px 8px; border-radius: 5px; flex-shrink: 0; }
+  .sev.ERROR { background: var(--red-soft); color: var(--red); border: 1px solid var(--red-border); }
+  .sev.WARN { background: var(--amber-soft); color: var(--amber); }
+  .sev.INFO { background: #eef4fd; color: #1d5fbf; }
+  .sev.DEBUG { background: var(--gray-pill); color: var(--text-3); }
+
+  .log-detail { display: none; padding: 6px 16px 18px 200px; border-bottom: 1px solid #f0f0f3; }
+  .log-detail.open { display: block; }
+  .log-detail h4 { font-size: 14px; font-weight: 650; margin: 10px 0 8px; }
+  .log-detail .lbl { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-3); margin: 10px 0 5px; }
+  .log-detail pre {
+    font-family: var(--mono); font-size: 12px; background: #17171c; color: #e6e6ea;
+    padding: 12px 14px; border-radius: 8px; overflow-x: auto; line-height: 1.55;
+  }
+
+  /* ---------- API annotations ---------- */
+  [data-api] { position: relative; }
+  body.annotations [data-api] { outline: 1.5px dashed #b3b3f5; outline-offset: 3px; border-radius: 4px; }
+  body.annotations [data-api]::after {
+    content: attr(data-api);
+    position: absolute; top: -9px; left: 8px; z-index: 30;
+    background: var(--accent); color: #fff; font-family: var(--mono);
+    font-size: 10px; font-weight: 600; padding: 1px 7px; border-radius: 4px; white-space: nowrap;
+    max-width: 540px; overflow: hidden; text-overflow: ellipsis;
+  }
+  body.annotations .actions { flex-direction: column; align-items: flex-start; gap: 18px; padding-top: 20px; }
+
+  /* ---------- Toast ---------- */
+  #toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: #17171c; color: #fff; padding: 10px 18px; border-radius: 8px; font-size: 13px;
+    transition: transform .25s; z-index: 100; box-shadow: 0 8px 24px rgba(0,0,0,.25); max-width: 90vw;
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+  #toast code { font-family: var(--mono); color: #b8b8f8; }
+
+  .beta-link { font-size: 12.5px; color: var(--accent); text-decoration: none; display: inline-block; margin-bottom: 12px; cursor: pointer; }
+  .footnote { color: var(--text-3); font-size: 12px; margin-top: 26px; max-width: 760px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ======= Sidebar (light, mirrors present-state video) ======= -->
+  <nav class="sidebar">
+    <div class="proj-switcher"><span>▣</span> my-project <span class="chev">▾</span></div>
+    <div class="nav-item active" onclick="show('customers')"><span class="ic">◉</span> Customers <span class="dot"></span></div>
+    <div class="nav-item"><span class="ic">⚡</span> Integrations</div>
+    <div class="nav-item"><span class="ic">⚙</span> Project settings</div>
+    <div class="nav-item"><span class="ic">🗝</span> API keys</div>
+    <div class="nav-item"><span class="ic">🗝</span> JWT keys</div>
+    <div class="nav-item"><span class="ic">◫</span> Provider apps</div>
+    <div class="nav-item"><span class="ic">➤</span> Destinations</div>
+    <div class="nav-item"><span class="ic">🔔</span> Notifications</div>
+    <div class="nav-sep"></div>
+    <div class="nav-item"><span class="ic">▣</span> Projects</div>
+    <div class="nav-item"><span class="ic">⚙</span> Org settings</div>
+    <div class="bottom nav-item"><span class="ic">⎋</span> Log out</div>
+  </nav>
+
+  <div class="main">
+    <!-- ======= Topbar: breadcrumbs + prototype toggle ======= -->
+    <div class="topbar">
+      <div>
+        <div class="crumbs" id="crumbs"><a onclick="show('customers')">Customers</a></div>
+        <div class="page-title" id="ptitle">Customers</div>
+      </div>
+      <div class="spacer"></div>
+      <div class="toggle-wrap" onclick="toggleAnnotations()">
+        <div class="switch"></div>
+        <span>Show API calls powering each element</span>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="demo-banner">
+        <b>Prototype</b> — all data simulated; layout mirrors the current dashboard, elements tagged <span class="new-tag" style="vertical-align:0">NEW</span> are the proposed additions.
+        Every element is powered by an <b>existing</b> Ampersand API capability — flip the toggle (top right) to see the call behind each component.
+        Scenario: Spreedly's NetSuite integration began failing Jul 10.
+      </div>
+
+      <!-- ================= VIEW: Customers ================= -->
+      <section class="view visible" id="view-customers">
+        <div class="overview">
+          <div class="row1">
+            <div>
+              <h2>Customers Overview</h2>
+              <p>Overview of all customers with active installations. Click any customer row below to view detailed installation information and configuration.</p>
+            </div>
+            <div class="right">Project ID: 7573aa62-b427-4714-a1f2-5717a01231a7 ⧉</div>
+          </div>
+          <div class="row2">
+            <span class="chip"><span class="k">Total customers</span> <span class="v">6</span></span>
+            <span class="chip alert" data-api="GET /integrations/{id}/installations → healthStatus (existing field, not yet surfaced here)"><span class="k">Unhealthy</span> <span class="v">1</span><span class="new-tag" style="vertical-align:1px">NEW</span></span>
+            <button class="linkbtn">View customers data</button>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <span class="addfilter">+ Add filter</span>
+          <span class="search">Search</span>
+        </div>
+
+        <div class="tablewrap" data-api="GET /integrations/{id}/installations → healthStatus, lastOperationStatus">
+          <table>
+            <thead><tr>
+              <th class="caret"></th>
+              <th>Customer Name <span class="sort">⇅</span></th>
+              <th>Group Ref <span class="sort">⇅</span></th>
+              <th>Total Installations <span class="sort">⇅</span></th>
+              <th>Health <span class="new-tag">NEW</span></th>
+              <th>Last Failure <span class="new-tag">NEW</span></th>
+              <th>Last Updated <span class="sort">↓</span></th>
+              <th class="kebab"></th>
+            </tr></thead>
+            <tbody>
+              <tr class="clickable" onclick="show('customer')">
+                <td class="caret">›</td>
+                <td class="name">Spreedly</td>
+                <td class="mono">spreedly</td>
+                <td>2</td>
+                <td><span class="pill bad">1 unhealthy</span></td>
+                <td class="mono">Jul 10, 2026, 05:02:11 PM · NetSuite read</td>
+                <td class="mono">Jul 10, 2026, 05:02:11 PM</td>
+                <td class="kebab">⋮</td>
+              </tr>
+              <tr class="clickable" onclick="toast('Demo is scoped to the Spreedly scenario')">
+                <td class="caret">›</td>
+                <td class="name">Acme CRM</td>
+                <td class="mono">acme-crm</td>
+                <td>3</td>
+                <td><span class="pill ok">healthy</span></td>
+                <td class="mono">—</td>
+                <td class="mono">Jul 13, 2026, 08:30:12 AM</td>
+                <td class="kebab">⋮</td>
+              </tr>
+              <tr class="clickable" onclick="toast('Demo is scoped to the Spreedly scenario')">
+                <td class="caret">›</td>
+                <td class="name">Brightline</td>
+                <td class="mono">brightline</td>
+                <td>1</td>
+                <td><span class="pill ok">healthy</span></td>
+                <td class="mono">—</td>
+                <td class="mono">Jul 12, 2026, 11:47:55 PM</td>
+                <td class="kebab">⋮</td>
+              </tr>
+              <tr class="clickable" onclick="toast('Demo is scoped to the Spreedly scenario')">
+                <td class="caret">›</td>
+                <td class="name">Northwind Labs</td>
+                <td class="mono">northwind</td>
+                <td>2</td>
+                <td><span class="pill ok">healthy</span></td>
+                <td class="mono">—</td>
+                <td class="mono">Jul 11, 2026, 02:15:08 PM</td>
+                <td class="kebab">⋮</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="footnote">Change vs. today: unhealthy customers sort to the top, and Health / Last Failure columns surface fields the API already returns (<span class="mono">healthStatus</span>, <span class="mono">lastOperationStatus</span>) but the Customers page doesn't show. Timestamps stay UTC per user research.</div>
+      </section>
+
+      <!-- ================= VIEW: Customer detail ================= -->
+      <section class="view" id="view-customer">
+        <div class="overview">
+          <div class="row1">
+            <div>
+              <h2>Customer Details</h2>
+              <p>View all installations for Spreedly. Click any installation row below to see detailed information, operation logs, and configuration settings.</p>
+            </div>
+            <div class="right">Customer Reference: spreedly ⧉</div>
+          </div>
+          <div class="row2">
+            <span class="chip"><span class="k">Customer name</span> <span class="v">Spreedly</span></span>
+            <span class="chip"><span class="k">Total installations</span> <span class="v">2</span></span>
+            <button class="linkbtn">View customer data</button>
+          </div>
+        </div>
+
+        <!-- AI Diagnosis Summary — the headline NEW element -->
+        <div class="ai-card" data-api="LLM composition over the 6 evidence calls below — no new Ampersand API surface">
+          <div class="head">
+            <span class="label">Diagnosis Summary</span>
+            <span class="new-tag" style="vertical-align:0">NEW</span>
+            <span class="ai-chip">✦ AI-generated · grounded in 6 API calls</span>
+            <span class="conf-chip high" id="ai-conf">Confidence: High (deterministic signal)</span>
+          </div>
+          <div class="body" id="ai-body">
+            <b>Spreedly's NetSuite reads are failing because their OAuth credentials were revoked (failure class: auth).</b><span class="cite" onclick="cite('chk-conn')">1</span>
+            Failures began <b>Jul 10 at 16:14 UTC</b>; Ampersand retried 6 times, each rejected by NetSuite with <span class="mono">INVALID_LOGIN_ATTEMPT</span>.<span class="cite" onclick="cite('chk-ops')">2</span><span class="cite" onclick="cite('chk-token')">3</span>
+            Only the NetSuite installation is affected — Spreedly's Salesforce sync and all other NetSuite customers remain healthy.<span class="cite" onclick="cite('chk-backfill')">4</span>
+            <b>Recommended:</b> send a re-auth link to the connection owner (jane@spreedly.com), then unpause reads and trigger a test read to verify.<span class="cite" onclick="cite('chk-conn')">1</span>
+          </div>
+          <div class="foot">
+            <span>Citations link to the evidence below — every claim is traceable or it isn't shown.</span>
+            <a onclick="toggleUnclassified()" id="ai-toggle">View unclassifiable example →</a>
+          </div>
+        </div>
+
+        <!-- Diagnosis panel — the NEW element -->
+        <div class="diagnosis">
+          <div class="head">
+            <div class="label">Diagnosis — root cause identified <span class="new-tag" style="background:#fff">NEW</span></div>
+            <h2>NetSuite credentials revoked — customer must re-authenticate</h2>
+            <div class="meta">
+              Reads on <span class="mono">invoice</span> have failed since <b>Jul 10, 16:14 UTC</b> (6 attempts) and were
+              <b>auto-paused</b> at 17:02 UTC. Nothing will sync until the connection is re-authorized and reads are unpaused.
+            </div>
+          </div>
+
+          <div class="check fail" id="chk-conn" data-api="GET /projects/my-project/connections?groupRef=spreedly">
+            <div class="icon">✕</div>
+            <div class="body">
+              <div class="t">Connection status: <span class="mono">bad_credentials</span></div>
+              <div class="d">NetSuite connection <span class="mono">conn-8f31</span> transitioned from <span class="mono">working</span> → <span class="mono">bad_credentials</span> on Jul 10, 16:14 UTC.</div>
+            </div>
+          </div>
+
+          <div class="check fail" id="chk-token" data-api="GET /connections/conn-8f31 → oauth2 token expiresAt, scopes">
+            <div class="icon">✕</div>
+            <div class="body">
+              <div class="t">OAuth token rejected by provider</div>
+              <div class="d">NetSuite returned <span class="mono">401 INVALID_LOGIN_ATTEMPT</span> — token revoked or expired upstream (e.g. the authorizing NetSuite user was deactivated).</div>
+            </div>
+          </div>
+
+          <div class="check warn" data-api="Inferred from read.schedule.paused notification · pause/unpause API exists; current-state read is a gap → Task 2 #3">
+            <div class="icon">⏸</div>
+            <div class="body">
+              <div class="t">Scheduled reads: paused (automatic)</div>
+              <div class="d">Ampersand paused reads after 6 consecutive failures. Remember to unpause after the customer re-authenticates.</div>
+            </div>
+          </div>
+
+          <div class="check pass" id="chk-backfill" data-api="GET /installations/66438162/objects/invoice/backfill-progress">
+            <div class="icon">✓</div>
+            <div class="body">
+              <div class="t">Initial backfill: complete</div>
+              <div class="d">184,203 / 184,203 records — not a backfill issue.</div>
+            </div>
+          </div>
+
+          <div class="check fail" id="chk-ops" data-api="GET /installations/66438162/operations (filtered to status=failure client-side)">
+            <div class="icon">✕</div>
+            <div class="body">
+              <div class="t">6 consecutive failed read operations on <span class="mono">invoice</span></div>
+              <div class="d">Identical provider error on every attempt. <a onclick="show('operation')">View latest failed operation →</a></div>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button class="btn primary" data-api="PATCH /connections/conn-8f31:oauth-update → re-auth URL"
+              onclick="toast('Simulated — re-auth link copied. Powered by <code>PATCH /connections/{id}:oauth-update</code>')">Copy re-auth link for customer</button>
+            <button class="btn" data-api="POST /installations/66438162:unpause"
+              onclick="toast('Simulated — reads unpaused via <code>POST /installations/{id}:unpause</code>')">Unpause reads</button>
+            <button class="btn" data-api="POST trigger-a-read {groupRef, mode: async} → operationId"
+              onclick="toast('Simulated — test read triggered via <code>POST /trigger-a-read</code>; watch returned operationId')">Trigger test read</button>
+            <button class="btn" data-api="No new API — every ID is already in the responses fetched above"
+              onclick="copyIds()">Copy diagnostic IDs</button>
+          </div>
+        </div>
+
+        <!-- Installations table (video columns + Connection NEW) -->
+        <div class="tablewrap" data-api="GET /integrations/{id}/installations?groupRef=spreedly">
+          <table>
+            <thead><tr>
+              <th class="caret"></th>
+              <th>Provider</th>
+              <th>Integration</th>
+              <th>Installation ID</th>
+              <th>Last Operation Status</th>
+              <th>Connection <span class="new-tag">NEW</span></th>
+              <th>Created</th>
+              <th class="kebab"></th>
+            </tr></thead>
+            <tbody>
+              <tr class="clickable" onclick="show('operation')">
+                <td class="caret">›</td>
+                <td class="name">NetSuite</td>
+                <td class="mono">netsuite-invoice-sync</td>
+                <td class="mono">66438162-5299-4669-a41d-85c5a3b1a83e</td>
+                <td><span class="pill bad">Failure</span></td>
+                <td><span class="pill bad">bad_credentials</span></td>
+                <td class="mono">Mar 3, 2026, 09:12:44 AM</td>
+                <td class="kebab">⋮</td>
+              </tr>
+              <tr>
+                <td class="caret">›</td>
+                <td class="name">Salesforce</td>
+                <td class="mono">salesforce-account-sync</td>
+                <td class="mono">d8102f11-40c2-47a9-8b1e-33f00c6a91b2</td>
+                <td><span class="pill ok">Success</span></td>
+                <td><span class="pill ok">working</span></td>
+                <td class="mono">Mar 3, 2026, 09:14:02 AM</td>
+                <td class="kebab">⋮</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="footnote">The Connection column joins connection status onto the installations view — dissolving the connections-vs-installations health confusion observed in user testing, using a field <span class="mono">GET /connections</span> already returns.</div>
+      </section>
+
+      <!-- ================= VIEW: Operation detail ================= -->
+      <section class="view" id="view-operation">
+        <div class="overview">
+          <div class="row1">
+            <div>
+              <h2>Operation (Read)</h2>
+              <p>Click any log row to view full details, including the raw provider request and response.</p>
+            </div>
+            <div class="right">Operation ID: 60deaf48-3856-4a2b-bfd4-3de85125eca8 ⧉</div>
+          </div>
+          <div class="row2">
+            <span class="chip"><span class="k">Provider</span> <span class="v">netsuite</span></span>
+            <span class="chip"><span class="k">Group</span> <span class="v">Spreedly</span></span>
+            <span class="chip"><span class="k">Object</span> <span class="v">invoice</span></span>
+            <span class="chip"><span class="k">Status</span> <span class="v" style="color:var(--red)">failure</span></span>
+            <span class="chip"><span class="k">Retries</span> <span class="v">6 · last 17:02 UTC</span></span>
+          </div>
+        </div>
+
+        <a class="beta-link">Browse operations across this installation (beta) →</a>
+
+        <div class="error-summary" data-api="GET /operations/60deaf48/logs → message.error (ERROR entries surfaced first)">
+          <div class="t">Error — surfaced from operation logs <span class="new-tag" style="background:#fff">NEW</span></div>
+          NetSuite responded <code>401</code> with <code>INVALID_LOGIN_ATTEMPT</code>: the OAuth token was revoked or has expired.
+          The connection has been marked <code>bad_credentials</code> and scheduled reads were auto-paused after repeated failures.
+        </div>
+
+        <div class="tablewrap" data-api="GET /projects/my-project/operations/60deaf48/logs">
+          <div style="padding:12px 16px; border-bottom:1px solid var(--border); font-weight:600; font-size:13.5px;">
+            Logs <span class="pill neutral" style="margin-left:6px">errors pinned first <span class="new-tag">NEW</span></span>
+          </div>
+
+          <div class="log-row error-pin" onclick="flip(this)">
+            <span class="ts">2026-07-10T16:14:44Z</span>
+            <span class="caret">›</span>
+            <span class="msg">Read request to NetSuite failed: INVALID_LOGIN_ATTEMPT</span>
+            <span class="sev ERROR">ERROR</span>
+          </div>
+          <div class="log-detail">
+            <h4>Log Details</h4>
+            <div class="lbl">message.error</div>
+            <pre>INVALID_LOGIN_ATTEMPT: The provided OAuth token has been revoked or has expired.</pre>
+            <div class="lbl">Full JSON object — raw provider request</div>
+            <pre>GET https://4482…suitetalk.api.netsuite.com/services/rest/query/v1/suiteql
+Authorization: Bearer eyJraWQ…(redacted)
+Prefer: transient</pre>
+            <div class="lbl">Full JSON object — raw provider response</div>
+            <pre>HTTP/1.1 401 Unauthorized
+{
+  "type": "https://www.rfc-editor.org/rfc/rfc9110.html#section-15.5.2",
+  "title": "Unauthorized",
+  "status": 401,
+  "o:errorDetails": [{ "detail": "Invalid login attempt.", "o:errorCode": "INVALID_LOGIN" }]
+}</pre>
+          </div>
+
+          <div class="log-row" onclick="flip(this)">
+            <span class="ts">2026-07-10T16:14:44Z</span>
+            <span class="caret">›</span>
+            <span class="msg">Issuing SuiteQL read for object invoice</span>
+            <span class="sev DEBUG">DEBUG</span>
+          </div>
+          <div class="log-detail"><div class="lbl">details</div><pre>{ "objectName": "invoice", "mode": "scheduled", "installationId": "66438162-5299-4669-a41d-85c5a3b1a83e" }</pre></div>
+
+          <div class="log-row" onclick="flip(this)">
+            <span class="ts">2026-07-10T16:14:43Z</span>
+            <span class="caret">›</span>
+            <span class="msg">Attempting token refresh before request (expired at 16:02:11Z)</span>
+            <span class="sev INFO">INFO</span>
+          </div>
+          <div class="log-detail"><div class="lbl">details</div><pre>{ "connectionId": "conn-8f31", "result": "refresh_rejected", "providerStatus": 400 }</pre></div>
+
+          <div class="log-row" onclick="flip(this)">
+            <span class="ts">2026-07-10T16:14:41Z</span>
+            <span class="caret">›</span>
+            <span class="msg">Connection conn-8f31 marked bad_credentials</span>
+            <span class="sev WARN">WARN</span>
+          </div>
+          <div class="log-detail"><div class="lbl">details</div><pre>{ "from": "working", "to": "bad_credentials", "trigger": "refresh_rejected" }</pre></div>
+
+          <div class="log-row" onclick="flip(this)">
+            <span class="ts">2026-07-10T16:14:40Z</span>
+            <span class="caret">›</span>
+            <span class="msg">Scheduled read triggered for installation 66438162 (invoice)</span>
+            <span class="sev DEBUG">DEBUG</span>
+          </div>
+          <div class="log-detail"><div class="lbl">details</div><pre>{ "schedule": "*/30 * * * *", "operationId": "60deaf48-3856-4a2b-bfd4-3de85125eca8" }</pre></div>
+        </div>
+
+        <div class="footnote">
+          This deepest level keeps today's layout (ISO timestamps, expandable rows, full JSON object — as in the present-state video). The additions: severity chips, the error pinned to the top with a plain-language summary, and the diagnosis layer above it — so the raw logs become the evidence, not the starting point.
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+  const crumbs = {
+    customers: { c: '<a onclick="show(\'customers\')">Customers</a>', t: 'Customers' },
+    customer:  { c: '<a onclick="show(\'customers\')">Customers</a> ›', t: 'Customer: Spreedly' },
+    operation: { c: '<a onclick="show(\'customers\')">Customers</a> › <a onclick="show(\'customer\')">Spreedly</a> › netsuite-invoice-sync ›', t: 'Operation (Read)' }
+  };
+  function show(view) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('visible'));
+    document.getElementById('view-' + view).classList.add('visible');
+    document.getElementById('crumbs').innerHTML = crumbs[view].c;
+    document.getElementById('ptitle').textContent = crumbs[view].t;
+    window.scrollTo(0, 0);
+  }
+  function toggleAnnotations() { document.body.classList.toggle('annotations'); }
+  function flip(row) { row.nextElementSibling.classList.toggle('open'); }
+
+  /* ---- AI Diagnosis Summary interactions ---- */
+  function cite(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+  }
+  const AI_CLASSIFIED = {
+    conf: 'Confidence: High (deterministic signal)', confClass: 'conf-chip high',
+    toggle: 'View unclassifiable example →',
+    body: `<b>Spreedly's NetSuite reads are failing because their OAuth credentials were revoked (failure class: auth).</b><span class="cite" onclick="cite('chk-conn')">1</span>
+      Failures began <b>Jul 10 at 16:14 UTC</b>; Ampersand retried 6 times, each rejected by NetSuite with <span class="mono">INVALID_LOGIN_ATTEMPT</span>.<span class="cite" onclick="cite('chk-ops')">2</span><span class="cite" onclick="cite('chk-token')">3</span>
+      Only the NetSuite installation is affected — Spreedly's Salesforce sync and all other NetSuite customers remain healthy.<span class="cite" onclick="cite('chk-backfill')">4</span>
+      <b>Recommended:</b> send a re-auth link to the connection owner (jane@spreedly.com), then unpause reads and trigger a test read to verify.<span class="cite" onclick="cite('chk-conn')">1</span>`
+  };
+  const AI_UNCLASSIFIED = {
+    conf: 'Unclassified — no known failure class matched', confClass: 'conf-chip low',
+    toggle: '← Back to classified example',
+    body: `<b>This failure could not be matched to a known failure class</b> — the summary will not guess.
+      Reads on <span class="mono">invoice</span> have failed 3 times since <b>Jul 12, 04:10 UTC</b>; the connection is healthy and backfill is complete, so auth and sync causes are ruled out.<span class="cite" onclick="cite('chk-ops')">1</span>
+      The most relevant raw error is shown verbatim below; the full evidence checklist and logs remain available.
+      <div class="rawerr">NetSuite responded 400: {"o:errorDetails":[{"detail":"Invalid or unsupported search criteria: transaction date range exceeds allowed window for this saved search."}]}</div>
+      <b>Recommended:</b> review the raw operation logs, or escalate to Ampersand support with the diagnostic bundle attached.`
+  };
+  let aiState = 'classified';
+  function toggleUnclassified() {
+    aiState = aiState === 'classified' ? 'unclassified' : 'classified';
+    const s = aiState === 'classified' ? AI_CLASSIFIED : AI_UNCLASSIFIED;
+    document.getElementById('ai-body').innerHTML = s.body;
+    const conf = document.getElementById('ai-conf');
+    conf.textContent = s.conf; conf.className = s.confClass;
+    document.getElementById('ai-toggle').textContent = s.toggle;
+  }
+  function copyIds() {
+    const bundle = [
+      'project:      my-project',
+      'groupRef:     spreedly',
+      'integration:  d17c9f2a (netsuite-invoice-sync)',
+      'installation: 66438162-5299-4669-a41d-85c5a3b1a83e',
+      'connection:   conn-8f31 (bad_credentials)',
+      'operation:    60deaf48-3856-4a2b-bfd4-3de85125eca8',
+      'error:        NetSuite 401 INVALID_LOGIN_ATTEMPT — token revoked/expired'
+    ].join('\n');
+    try { navigator.clipboard.writeText(bundle); } catch (e) {}
+    toast('Diagnostic bundle copied — ready to paste into Slack or a support thread');
+  }
+  let toastTimer;
+  function toast(msg) {
+    const t = document.getElementById('toast');
+    t.innerHTML = msg; t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
+  }
+</script>
+</body>
+</html>
