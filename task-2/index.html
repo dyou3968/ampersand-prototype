@@ -114,6 +114,20 @@
   .page { display: none; }
   .page.active { display: block; }
 
+  /* ---------- Language selector ---------- */
+  .excard.reqcard { overflow: visible; }
+  .excard.reqcard .exbar { border-radius: 13px 13px 0 0; }
+  .excard.reqcard .reqpre { border-radius: 0 0 13px 13px; }
+  .exbar .tools .ic { color: var(--text-3); cursor: pointer; font-size: 13px; }
+  .langsel { position: relative; display: inline-flex; align-items: center; gap: 7px; font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--text-2); border: 1px solid var(--border-2); border-radius: 8px; padding: 4px 8px; cursor: pointer; background: #fff; }
+  .lbadge { width: 17px; height: 17px; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 8.5px; font-weight: 800; color: #fff; flex-shrink: 0; line-height: 1; }
+  .langmenu { position: absolute; top: calc(100% + 7px); right: 0; width: 178px; background: #fff; border: 1px solid var(--border-2); border-radius: 12px; box-shadow: 0 12px 34px rgba(20,20,40,.16); padding: 6px; z-index: 80; display: none; text-align: left; }
+  .langmenu.open { display: block; }
+  .langitem { display: flex; align-items: center; gap: 10px; padding: 7px 9px; border-radius: 8px; font-size: 14px; font-weight: 500; color: var(--text); cursor: pointer; }
+  .langitem:hover { background: var(--bg-2); }
+  .langitem .chk { margin-left: auto; color: var(--purple); font-weight: 700; visibility: hidden; }
+  .langitem.sel .chk { visibility: visible; }
+
   /* ---------- Floating ask widget ---------- */
   .askwidget { position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%); width: 440px; max-width: 80vw; background: #fff; border: 1px solid var(--border-2); border-radius: 13px; box-shadow: 0 10px 34px rgba(20,20,40,.14); padding: 13px 15px; display: flex; align-items: center; gap: 10px; z-index: 40; }
   .askwidget .ph { color: var(--text-3); font-size: 14px; flex: 1; }
@@ -266,11 +280,12 @@
 
         <!-- Diagnosis -->
         <div class="page active" id="ex-diagnose">
-          <div class="excard">
-            <div class="exbar"><span class="name">Operation diagnosis</span><span class="tools"><span class="lang"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 17l6-6-6-6"/><line x1="12" y1="19" x2="20" y2="19"/></svg> cURL ⌄</span> ⧉ ✦</span></div>
-<pre><span class="f">curl</span> <span class="f">--request</span> GET <span class="p">\</span>
-  <span class="f">--url</span> <span class="s">'https://api.withampersand.com/v1/projects/personal-dev/operations/60deaf48.../diagnosis'</span> <span class="p">\</span>
-  <span class="f">--header</span> <span class="s">'X-Api-Key: &lt;api-key&gt;'</span></pre>
+          <div class="excard reqcard">
+            <div class="exbar"><span class="name">Operation diagnosis</span><span class="tools">
+              <div class="langsel" id="sel-d" onclick="toggleMenu('d', event)"><span class="lbadge" id="selbadge-d"></span><span id="selname-d">cURL</span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 9l4-4 4 4"/><path d="M16 15l-4 4-4-4"/></svg><div class="langmenu" id="menu-d"></div></div>
+              <span class="ic">⧉</span><span class="ic">✦</span>
+            </span></div>
+<pre class="reqpre" id="req-d"></pre>
           </div>
           <div class="excard">
             <div class="resptabs"><span class="rtab active" data-code="200" id="btn-d-200" onclick="showResp('d','200')">200</span><span class="rtab" data-code="400" id="btn-d-400" onclick="showResp('d','400')">400</span><span class="rtab" data-code="422" id="btn-d-422" onclick="showResp('d','422')">422</span><span class="rtab" data-code="default" id="btn-d-default" onclick="showResp('d','default')">default</span><span class="tools">⧉ ✦</span></div>
@@ -343,15 +358,12 @@
 
         <!-- Query -->
         <div class="page" id="ex-query">
-          <div class="excard">
-            <div class="exbar"><span class="name">Query operations</span><span class="tools"><span class="lang"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 17l6-6-6-6"/><line x1="12" y1="19" x2="20" y2="19"/></svg> cURL ⌄</span> ⧉ ✦</span></div>
-<pre><span class="c"># How many customers on this provider are failing?</span>
-<span class="f">curl</span> <span class="f">--request</span> GET <span class="f">-G</span> <span class="p">\</span>
-  <span class="f">--url</span> <span class="s">'https://api.withampersand.com/v1/projects/personal-dev/operations'</span> <span class="p">\</span>
-  <span class="f">--header</span> <span class="s">'X-Api-Key: &lt;api-key&gt;'</span> <span class="p">\</span>
-  <span class="f">--data-urlencode</span> <span class="s">'status=failure'</span> <span class="p">\</span>
-  <span class="f">--data-urlencode</span> <span class="s">'provider=netsuite'</span> <span class="p">\</span>
-  <span class="f">--data-urlencode</span> <span class="s">'groupBy=groupRef'</span></pre>
+          <div class="excard reqcard">
+            <div class="exbar"><span class="name">Query operations</span><span class="tools">
+              <div class="langsel" id="sel-q" onclick="toggleMenu('q', event)"><span class="lbadge" id="selbadge-q"></span><span id="selname-q">cURL</span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 9l4-4 4 4"/><path d="M16 15l-4 4-4-4"/></svg><div class="langmenu" id="menu-q"></div></div>
+              <span class="ic">⧉</span><span class="ic">✦</span>
+            </span></div>
+<pre class="reqpre" id="req-q"></pre>
           </div>
           <div class="excard">
             <div class="resptabs"><span class="rtab active" data-code="200" id="btn-q-200" onclick="showResp('q','200')">200</span><span class="rtab" data-code="400" id="btn-q-400" onclick="showResp('q','400')">400</span><span class="rtab" data-code="422" id="btn-q-422" onclick="showResp('q','422')">422</span><span class="rtab" data-code="default" id="btn-q-default" onclick="showResp('q','default')">default</span><span class="tools">⧉ ✦</span></div>
@@ -436,6 +448,225 @@
     document.getElementById('resp-' + group + '-' + code).classList.add('active');
     document.getElementById('btn-' + group + '-' + code).classList.add('active');
   }
+
+  /* ---------- Language selector ---------- */
+  const LANGS = [
+    { id: 'curl',       name: 'cURL',       abbr: '&gt;_', color: '#2b2b36' },
+    { id: 'python',     name: 'Python',     abbr: 'Py',    color: '#3572A5' },
+    { id: 'javascript', name: 'JavaScript', abbr: 'JS',    color: '#e9c000', tc: '#1a1a1f' },
+    { id: 'php',        name: 'PHP',        abbr: 'Ph',    color: '#6f7bb0' },
+    { id: 'go',         name: 'Go',         abbr: 'Go',    color: '#00add8' },
+    { id: 'java',       name: 'Java',       abbr: 'Jv',    color: '#e76f00' },
+    { id: 'ruby',       name: 'Ruby',       abbr: 'Rb',    color: '#cc342d' },
+  ];
+  const badge = l => '<span class="lbadge" style="background:' + l.color + (l.tc ? ';color:' + l.tc : '') + '">' + l.abbr + '</span>';
+
+  const D = 'https://api.withampersand.com/v1/projects/personal-dev/operations/60deaf48-3856-4a2b-bfd4-3de85125eca8/diagnosis';
+  const Q = 'https://api.withampersand.com/v1/projects/personal-dev/operations';
+
+  const SN = {
+    d: {
+      curl: `curl --request GET \\
+  --url '${D}' \\
+  --header 'X-Api-Key: <api-key>'`,
+      python: `import requests
+
+url = "${D}"
+headers = {"X-Api-Key": "<api-key>"}
+
+resp = requests.get(url, headers=headers)
+print(resp.json())`,
+      javascript: `const url = "${D}";
+
+const resp = await fetch(url, {
+  headers: { "X-Api-Key": "<api-key>" },
+});
+const data = await resp.json();`,
+      php: `<?php
+$ch = curl_init("${D}");
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_HTTPHEADER, ["X-Api-Key: <api-key>"]);
+$response = curl_exec($ch);
+curl_close($ch);`,
+      go: `package main
+
+import (
+    "io"
+    "net/http"
+)
+
+func main() {
+    req, _ := http.NewRequest("GET",
+        "${D}", nil)
+    req.Header.Set("X-Api-Key", "<api-key>")
+
+    res, _ := http.DefaultClient.Do(req)
+    defer res.Body.Close()
+    body, _ := io.ReadAll(res.Body)
+    _ = body
+}`,
+      java: `HttpClient client = HttpClient.newHttpClient();
+
+HttpRequest request = HttpRequest.newBuilder()
+    .uri(URI.create("${D}"))
+    .header("X-Api-Key", "<api-key>")
+    .GET()
+    .build();
+
+HttpResponse<String> response = client.send(
+    request, HttpResponse.BodyHandlers.ofString());`,
+      ruby: `require "net/http"
+require "uri"
+
+uri = URI("${D}")
+req = Net::HTTP::Get.new(uri)
+req["X-Api-Key"] = "<api-key>"
+
+res = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) do |http|
+  http.request(req)
+end
+puts res.body`,
+    },
+    q: {
+      curl: `# How many customers on this provider are failing?
+curl --request GET -G \\
+  --url '${Q}' \\
+  --header 'X-Api-Key: <api-key>' \\
+  --data-urlencode 'status=failure' \\
+  --data-urlencode 'provider=netsuite' \\
+  --data-urlencode 'groupBy=groupRef'`,
+      python: `import requests
+
+url = "${Q}"
+headers = {"X-Api-Key": "<api-key>"}
+params = {"status": "failure", "provider": "netsuite", "groupBy": "groupRef"}
+
+resp = requests.get(url, headers=headers, params=params)
+print(resp.json())`,
+      javascript: `const url = new URL("${Q}");
+url.search = new URLSearchParams({
+  status: "failure",
+  provider: "netsuite",
+  groupBy: "groupRef",
+}).toString();
+
+const resp = await fetch(url, {
+  headers: { "X-Api-Key": "<api-key>" },
+});
+const data = await resp.json();`,
+      php: `<?php
+$query = http_build_query([
+  "status" => "failure",
+  "provider" => "netsuite",
+  "groupBy" => "groupRef",
+]);
+$ch = curl_init("${Q}?" . $query);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_HTTPHEADER, ["X-Api-Key: <api-key>"]);
+$response = curl_exec($ch);
+curl_close($ch);`,
+      go: `package main
+
+import (
+    "io"
+    "net/http"
+)
+
+func main() {
+    req, _ := http.NewRequest("GET", "${Q}", nil)
+    req.Header.Set("X-Api-Key", "<api-key>")
+
+    q := req.URL.Query()
+    q.Add("status", "failure")
+    q.Add("provider", "netsuite")
+    q.Add("groupBy", "groupRef")
+    req.URL.RawQuery = q.Encode()
+
+    res, _ := http.DefaultClient.Do(req)
+    defer res.Body.Close()
+    body, _ := io.ReadAll(res.Body)
+    _ = body
+}`,
+      java: `HttpClient client = HttpClient.newHttpClient();
+
+String url = "${Q}"
+    + "?status=failure&provider=netsuite&groupBy=groupRef";
+
+HttpRequest request = HttpRequest.newBuilder()
+    .uri(URI.create(url))
+    .header("X-Api-Key", "<api-key>")
+    .GET()
+    .build();
+
+HttpResponse<String> response = client.send(
+    request, HttpResponse.BodyHandlers.ofString());`,
+      ruby: `require "net/http"
+require "uri"
+
+uri = URI("${Q}")
+uri.query = URI.encode_www_form(
+  status: "failure",
+  provider: "netsuite",
+  groupBy: "groupRef",
+)
+req = Net::HTTP::Get.new(uri)
+req["X-Api-Key"] = "<api-key>"
+
+res = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) do |http|
+  http.request(req)
+end
+puts res.body`,
+    },
+  };
+
+  // Minimal syntax highlighter: comments (line-leading # or //) + quoted strings.
+  function hl(code) {
+    const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return code.split('\n').map(line => {
+      const t = line.trimStart();
+      if (t.startsWith('#') || t.startsWith('//')) return '<span class="c">' + esc(line) + '</span>';
+      let out = '', last = 0, m;
+      const re = /(['"])(?:\\.|(?!\1).)*\1/g;
+      while ((m = re.exec(line)) !== null) {
+        out += esc(line.slice(last, m.index)) + '<span class="s">' + esc(m[0]) + '</span>';
+        last = m.index + m[0].length;
+      }
+      return out + esc(line.slice(last));
+    }).join('\n');
+  }
+
+  function buildMenus() {
+    ['d','q'].forEach(g => {
+      document.getElementById('menu-' + g).innerHTML = LANGS.map(l =>
+        '<div class="langitem" data-lang="' + l.id + '" onclick="setLang(\'' + l.id + '\', event)">' +
+        badge(l) + '<span>' + l.name + '</span><span class="chk">✓</span></div>').join('');
+    });
+  }
+  function setLang(lang, ev) {
+    if (ev) ev.stopPropagation();
+    const l = LANGS.find(x => x.id === lang);
+    document.getElementById('req-d').innerHTML = hl(SN.d[lang]);
+    document.getElementById('req-q').innerHTML = hl(SN.q[lang]);
+    ['d','q'].forEach(g => {
+      document.getElementById('selbadge-' + g).innerHTML = badge(l);
+      document.getElementById('selname-' + g).textContent = l.name;
+      document.querySelectorAll('#menu-' + g + ' .langitem').forEach(it =>
+        it.classList.toggle('sel', it.dataset.lang === lang));
+    });
+    closeMenus();
+  }
+  function toggleMenu(which, ev) {
+    ev.stopPropagation();
+    ['d','q'].forEach(g => { if (g !== which) document.getElementById('menu-' + g).classList.remove('open'); });
+    document.getElementById('menu-' + which).classList.toggle('open');
+  }
+  function closeMenus() {
+    ['d','q'].forEach(g => document.getElementById('menu-' + g).classList.remove('open'));
+  }
+  document.addEventListener('click', closeMenus);
+
+  buildMenus();
+  setLang('curl');
 </script>
 </body>
 </html>
