@@ -89,6 +89,18 @@
   .param .opt { font-size: 12.5px; font-weight: 500; color: var(--text-3); }
   .param .d { font-size: 13.5px; color: var(--text-2); margin-top: 6px; }
   .param .d .enum { font-family: var(--mono); font-size: 12px; background: var(--bg-2); border: 1px solid var(--border); padding: 0 5px; border-radius: 4px; color: var(--text); }
+  .children { border: 1px solid var(--border-2); border-radius: 11px; margin-top: 13px; overflow: hidden; }
+  .childtoggle { display: flex; align-items: center; gap: 8px; padding: 11px 15px; font-size: 13.5px; font-weight: 500; color: var(--text-2); cursor: pointer; background: var(--bg-2); user-select: none; }
+  .childtoggle:hover { color: var(--text); }
+  .childtoggle .ck { color: var(--text-3); font-size: 12px; width: 10px; }
+  .kidwrap { display: none; padding: 2px 15px 6px; }
+  .kidwrap.open { display: block; }
+  .childrow { padding: 14px 0; border-bottom: 1px solid var(--border); }
+  .childrow:last-child { border-bottom: none; }
+  .childrow .par { color: var(--text-3); font-weight: 400; }
+  .ex { font-size: 13px; color: var(--text-2); margin-top: 8px; display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+  .ex code { font-family: var(--mono); font-size: 12px; background: var(--bg-2); border: 1px solid var(--border); padding: 2px 7px; border-radius: 5px; color: var(--text); }
+  .childrow .children { margin-top: 11px; }
 
   /* ---------- Right example panel (LIGHT) ---------- */
   .examples { width: 452px; flex-shrink: 0; padding: 34px 26px 30px 0; position: sticky; top: 101px; align-self: flex-start; }
@@ -227,12 +239,56 @@
 
         <div class="sec">Response</div>
         <div class="hr"></div>
-        <div class="param"><div class="row1"><span class="nm">category</span><span class="ty">enum</span></div><div class="d">Failure class: <span class="enum">auth</span> <span class="enum">permissions</span> <span class="enum">rate_limit</span> <span class="enum">provider_outage</span> <span class="enum">config</span> <span class="enum">unknown</span>.</div></div>
-        <div class="param"><div class="row1"><span class="nm">confidence</span><span class="ty">enum</span></div><div class="d"><span class="enum">high</span> · <span class="enum">medium</span> · <span class="enum">low</span>. Below threshold routes to <span class="enum">unknown</span> rather than guessing.</div></div>
-        <div class="param"><div class="row1"><span class="nm">rootCause</span><span class="ty">object</span></div><div class="d">Structured cause: <span class="enum">code</span>, <span class="enum">summary</span>, <span class="enum">providerError</span>, <span class="enum">scope</span> (single_customer vs all_customers).</div></div>
-        <div class="param"><div class="row1"><span class="nm">evidence</span><span class="ty">object[]</span></div><div class="d">The signals justifying the diagnosis, each with the <span class="enum">source</span> endpoint it came from.</div></div>
-        <div class="param"><div class="row1"><span class="nm">remedy</span><span class="ty">object</span></div><div class="d">Suggested fix with executable <span class="enum">actions[]</span> (method + path) drawn from a fixed class→remedy mapping.</div></div>
-        <div class="param"><div class="row1"><span class="nm">createTime</span><span class="ty">string · date-time</span></div><div class="d">When the diagnosis was computed (RFC-3339).</div></div>
+        <div class="param"><div class="row1"><span class="nm">category</span><span class="ty">enum</span><span class="req">required</span></div><div class="d">Failure class: <span class="enum">auth</span> <span class="enum">permissions</span> <span class="enum">rate_limit</span> <span class="enum">provider_outage</span> <span class="enum">config</span> <span class="enum">unknown</span>.</div></div>
+        <div class="param"><div class="row1"><span class="nm">confidence</span><span class="ty">enum</span><span class="req">required</span></div><div class="d"><span class="enum">high</span> · <span class="enum">medium</span> · <span class="enum">low</span>. Below threshold routes to <span class="enum">unknown</span> rather than guessing.</div></div>
+        <div class="param">
+          <div class="row1"><span class="nm">rootCause</span><span class="ty">object</span><span class="req">required</span></div>
+          <div class="d">Structured explanation of the failure.</div>
+          <div class="children">
+            <div class="childtoggle" onclick="toggleKids(this)"><span class="ck">›</span> <span class="label">Show child attributes</span></div>
+            <div class="kidwrap">
+              <div class="childrow"><div class="row1"><span class="nm"><span class="par">rootCause.</span>code</span><span class="ty">string</span></div><div class="d">Machine-readable failure code.</div><div class="ex">Example: <code>PROVIDER_TOKEN_REVOKED</code></div></div>
+              <div class="childrow"><div class="row1"><span class="nm"><span class="par">rootCause.</span>summary</span><span class="ty">string</span></div><div class="d">Plain-language explanation of the cause.</div></div>
+              <div class="childrow"><div class="row1"><span class="nm"><span class="par">rootCause.</span>providerError</span><span class="ty">string</span></div><div class="d">Raw error string returned by the provider.</div><div class="ex">Example: <code>INVALID_LOGIN_ATTEMPT</code></div></div>
+              <div class="childrow"><div class="row1"><span class="nm"><span class="par">rootCause.</span>scope</span><span class="ty">enum</span></div><div class="d"><span class="enum">single_customer</span> · <span class="enum">all_customers</span> — whether the failure is isolated to this customer or affects everyone on the integration.</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="param">
+          <div class="row1"><span class="nm">evidence</span><span class="ty">object[]</span><span class="req">required</span></div>
+          <div class="d">The signals justifying the diagnosis.</div>
+          <div class="children">
+            <div class="childtoggle" onclick="toggleKids(this)"><span class="ck">›</span> <span class="label">Show child attributes</span></div>
+            <div class="kidwrap">
+              <div class="childrow"><div class="row1"><span class="nm"><span class="par">evidence[].</span>type</span><span class="ty">string</span></div><div class="d">The kind of signal.</div><div class="ex">Example: <code>connection_status</code></div></div>
+              <div class="childrow"><div class="row1"><span class="nm"><span class="par">evidence[].</span>source</span><span class="ty">string</span></div><div class="d">The API call the signal was derived from.</div><div class="ex">Example: <code>GET /connections/conn-8f31</code></div></div>
+              <div class="childrow"><div class="row1"><span class="nm"><span class="par">evidence[].</span>detail</span><span class="ty">string</span></div><div class="d">Human-readable description of the evidence.</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="param">
+          <div class="row1"><span class="nm">remedy</span><span class="ty">object</span><span class="req">required</span></div>
+          <div class="d">Suggested fix, drawn from a fixed class→remedy mapping.</div>
+          <div class="children">
+            <div class="childtoggle" onclick="toggleKids(this)"><span class="ck">›</span> <span class="label">Show child attributes</span></div>
+            <div class="kidwrap">
+              <div class="childrow"><div class="row1"><span class="nm"><span class="par">remedy.</span>summary</span><span class="ty">string</span></div><div class="d">Suggested fix in plain language.</div></div>
+              <div class="childrow">
+                <div class="row1"><span class="nm"><span class="par">remedy.</span>actions</span><span class="ty">object[]</span></div>
+                <div class="d">Executable fix actions the dashboard renders as buttons.</div>
+                <div class="children">
+                  <div class="childtoggle" onclick="toggleKids(this)"><span class="ck">›</span> <span class="label">Show child attributes</span></div>
+                  <div class="kidwrap">
+                    <div class="childrow"><div class="row1"><span class="nm"><span class="par">actions[].</span>kind</span><span class="ty">string</span></div><div class="d">The action identifier.</div><div class="ex">Example: <code>reauthenticate_connection</code></div></div>
+                    <div class="childrow"><div class="row1"><span class="nm"><span class="par">actions[].</span>method</span><span class="ty">string</span></div><div class="d">HTTP method to call.</div><div class="ex">Example: <code>PATCH</code></div></div>
+                    <div class="childrow"><div class="row1"><span class="nm"><span class="par">actions[].</span>path</span><span class="ty">string</span></div><div class="d">Endpoint path to invoke the fix.</div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="param"><div class="row1"><span class="nm">createTime</span><span class="ty">string · date-time</span><span class="req">required</span></div><div class="d">When the diagnosis was computed (RFC-3339).</div></div>
       </div>
 
       <!-- ========== PAGE 2: QUERY OPERATIONS ========== -->
@@ -271,8 +327,59 @@
 
         <div class="sec">Response</div>
         <div class="hr"></div>
-        <div class="param"><div class="row1"><span class="nm">results</span><span class="ty">object[]</span></div><div class="d">Without <span class="enum">groupBy</span>: standard <span class="enum">{results, pagination}</span> operation list.</div></div>
-        <div class="param"><div class="row1"><span class="nm">groups</span><span class="ty">object[]</span></div><div class="d">With <span class="enum">groupBy</span>: aggregated counts plus <span class="enum">totalFailingCustomers</span> / <span class="enum">totalCustomersOnProvider</span>.</div></div>
+        <div class="param">
+          <div class="row1"><span class="nm">results</span><span class="ty">object[]</span></div>
+          <div class="d">Operation objects (returned when <span class="enum">groupBy</span> is omitted).</div>
+          <div class="children">
+            <div class="childtoggle" onclick="toggleKids(this)"><span class="ck">›</span> <span class="label">Show child attributes</span></div>
+            <div class="kidwrap">
+              <div class="childrow"><div class="row1"><span class="nm"><span class="par">results[].</span>id</span><span class="ty">string</span></div><div class="d">The operation ID.</div><div class="ex">Example: <code>60deaf48-3856-4a2b-bfd4-3de85125eca8</code></div></div>
+              <div class="childrow"><div class="row1"><span class="nm"><span class="par">results[].</span>groupRef</span><span class="ty">string</span></div><div class="d">The customer this operation belongs to (denormalized).</div><div class="ex">Example: <code>spreedly</code></div></div>
+              <div class="childrow"><div class="row1"><span class="nm"><span class="par">results[].</span>provider</span><span class="ty">string</span></div><div class="d">The provider — denormalized so the fleet view renders without N+1 lookups.</div><div class="ex">Example: <code>netsuite</code></div></div>
+              <div class="childrow"><div class="row1"><span class="nm"><span class="par">results[].</span>actionType</span><span class="ty">string</span></div><div class="d"><span class="enum">read</span> · <span class="enum">write</span> · <span class="enum">subscribe</span>.</div></div>
+              <div class="childrow"><div class="row1"><span class="nm"><span class="par">results[].</span>status</span><span class="ty">string</span></div><div class="d"><span class="enum">success</span> · <span class="enum">failure</span> · <span class="enum">in_progress</span>.</div></div>
+              <div class="childrow"><div class="row1"><span class="nm"><span class="par">results[].</span>result</span><span class="ty">string</span></div><div class="d">Human-readable outcome summary.</div></div>
+              <div class="childrow"><div class="row1"><span class="nm"><span class="par">results[].</span>createTime</span><span class="ty">string · date-time</span></div><div class="d">When the operation ran (RFC-3339).</div></div>
+              <div class="childrow">
+                <div class="row1"><span class="nm"><span class="par">results[].</span>metadata</span><span class="ty">object</span></div>
+                <div class="d">Operation metadata.</div>
+                <div class="children">
+                  <div class="childtoggle" onclick="toggleKids(this)"><span class="ck">›</span> <span class="label">Show child attributes</span></div>
+                  <div class="kidwrap">
+                    <div class="childrow"><div class="row1"><span class="nm"><span class="par">metadata.</span>objects</span><span class="ty">string[]</span></div><div class="d">Objects touched by the operation.</div><div class="ex">Example: <code>["invoice"]</code></div></div>
+                    <div class="childrow"><div class="row1"><span class="nm"><span class="par">metadata.</span>retry</span><span class="ty">object</span></div><div class="d">Retry <span class="enum">attempts</span> and <span class="enum">lastAttempt</span> timestamp.</div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="param">
+          <div class="row1"><span class="nm">pagination</span><span class="ty">object</span></div>
+          <div class="d">Cursor pagination (list mode).</div>
+          <div class="children">
+            <div class="childtoggle" onclick="toggleKids(this)"><span class="ck">›</span> <span class="label">Show child attributes</span></div>
+            <div class="kidwrap">
+              <div class="childrow"><div class="row1"><span class="nm"><span class="par">pagination.</span>done</span><span class="ty">boolean</span></div><div class="d">Whether this is the last page.</div></div>
+              <div class="childrow"><div class="row1"><span class="nm"><span class="par">pagination.</span>nextPageToken</span><span class="ty">string</span></div><div class="d">Cursor for the next page, if any.</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="param">
+          <div class="row1"><span class="nm">groups</span><span class="ty">object[]</span></div>
+          <div class="d">Aggregated counts (returned when <span class="enum">groupBy</span> is set).</div>
+          <div class="children">
+            <div class="childtoggle" onclick="toggleKids(this)"><span class="ck">›</span> <span class="label">Show child attributes</span></div>
+            <div class="kidwrap">
+              <div class="childrow"><div class="row1"><span class="nm"><span class="par">groups[].</span>groupRef</span><span class="ty">string</span></div><div class="d">The customer (group) reference.</div><div class="ex">Example: <code>spreedly</code></div></div>
+              <div class="childrow"><div class="row1"><span class="nm"><span class="par">groups[].</span>groupName</span><span class="ty">string</span></div><div class="d">Display name of the customer.</div></div>
+              <div class="childrow"><div class="row1"><span class="nm"><span class="par">groups[].</span>failureCount</span><span class="ty">integer</span></div><div class="d">Number of failing operations in the window.</div><div class="ex">Example: <code>6</code></div></div>
+              <div class="childrow"><div class="row1"><span class="nm"><span class="par">groups[].</span>latestFailure</span><span class="ty">string · date-time</span></div><div class="d">Timestamp of the most recent failure.</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="param"><div class="row1"><span class="nm">totalFailingCustomers</span><span class="ty">integer</span></div><div class="d">Count of customers with at least one failure (groupBy mode).</div></div>
+        <div class="param"><div class="row1"><span class="nm">totalCustomersOnProvider</span><span class="ty">integer</span></div><div class="d">Total customers on the filtered provider — powers the "3 of 41" ratio.</div></div>
       </div>
 
       <!-- ========== Example panel ========== -->
@@ -447,6 +554,12 @@
     ['200','400','422','default'].forEach(c => document.getElementById('btn-' + group + '-' + c).classList.remove('active'));
     document.getElementById('resp-' + group + '-' + code).classList.add('active');
     document.getElementById('btn-' + group + '-' + code).classList.add('active');
+  }
+  function toggleKids(el) {
+    const wrap = el.nextElementSibling;
+    const open = wrap.classList.toggle('open');
+    el.querySelector('.label').textContent = open ? 'Hide child attributes' : 'Show child attributes';
+    el.querySelector('.ck').textContent = open ? '⌄' : '›';
   }
 
   /* ---------- Language selector ---------- */
