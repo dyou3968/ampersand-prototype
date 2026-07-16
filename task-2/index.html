@@ -232,7 +232,7 @@
         <div class="param"><div class="row1"><span class="nm">rootCause</span><span class="ty">object</span></div><div class="d">Structured cause: <span class="enum">code</span>, <span class="enum">summary</span>, <span class="enum">providerError</span>, <span class="enum">scope</span> (single_customer vs all_customers).</div></div>
         <div class="param"><div class="row1"><span class="nm">evidence</span><span class="ty">object[]</span></div><div class="d">The signals justifying the diagnosis, each with the <span class="enum">source</span> endpoint it came from.</div></div>
         <div class="param"><div class="row1"><span class="nm">remedy</span><span class="ty">object</span></div><div class="d">Suggested fix with executable <span class="enum">actions[]</span> (method + path) drawn from a fixed class→remedy mapping.</div></div>
-        <div class="param"><div class="row1"><span class="nm">generatedAt</span><span class="ty">string · date-time</span></div><div class="d">When the diagnosis was computed (RFC-3339).</div></div>
+        <div class="param"><div class="row1"><span class="nm">createTime</span><span class="ty">string · date-time</span></div><div class="d">When the diagnosis was computed (RFC-3339).</div></div>
       </div>
 
       <!-- ========== PAGE 2: QUERY OPERATIONS ========== -->
@@ -316,7 +316,7 @@
         <span class="k">"path"</span><span class="p">:</span> <span class="s">"/connections/conn-8f31:oauth-update"</span> }
     ]
   }<span class="p">,</span>
-  <span class="k">"generatedAt"</span><span class="p">:</span> <span class="s">"2026-07-14T02:10:00Z"</span>
+  <span class="k">"createTime"</span><span class="p">:</span> <span class="s">"2026-07-14T02:10:00Z"</span>
 }</pre>
             </div>
             <div class="resp" data-rg="d" id="resp-d-400">
